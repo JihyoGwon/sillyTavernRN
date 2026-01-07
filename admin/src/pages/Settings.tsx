@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { getSettings, saveSettings } from '../services/settings';
 import type { Settings } from '../types/settings';
+import { validateSettings, formatValidationErrors } from '../utils/settingsValidation';
 import SettingsHeader from '../components/SettingsHeader';
 import SettingsTabs, { type SettingsTab } from '../components/SettingsTabs';
 import GeneralSettings from '../components/settings/GeneralSettings';
+import GenerationSettings from '../components/settings/GenerationSettings';
+import OpenAISettings from '../components/settings/OpenAISettings';
 import './Settings.css';
 
 export default function Settings() {
@@ -54,6 +57,15 @@ export default function Settings() {
         ...settings,
         ...localSettings,
       };
+
+      // 설정 검증
+      const validationErrors = validateSettings(mergedSettings);
+      if (validationErrors.length > 0) {
+        const errorMessage = formatValidationErrors(validationErrors);
+        alert(errorMessage);
+        setError(errorMessage);
+        return;
+      }
 
       await saveSettings(mergedSettings);
       
@@ -133,14 +145,16 @@ export default function Settings() {
           />
         )}
         {activeTab === 'generation' && (
-          <div className="settings-placeholder">
-            생성 파라미터 설정 (구현 예정)
-          </div>
+          <GenerationSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'openai' && (
-          <div className="settings-placeholder">
-            OpenAI 설정 (구현 예정)
-          </div>
+          <OpenAISettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'textgen' && (
           <div className="settings-placeholder">
