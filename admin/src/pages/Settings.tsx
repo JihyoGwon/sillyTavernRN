@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { getSettings, saveSettings } from '../services/settings';
 import type { Settings } from '../types/settings';
 import { validateSettings, formatValidationErrors } from '../utils/settingsValidation';
+import { getDefaultSettings } from '../utils/defaultSettings';
 import SettingsHeader from '../components/SettingsHeader';
 import SettingsTabs, { type SettingsTab } from '../components/SettingsTabs';
+import SettingsSearch from '../components/SettingsSearch';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import GenerationSettings from '../components/settings/GenerationSettings';
 import OpenAISettings from '../components/settings/OpenAISettings';
@@ -101,6 +103,89 @@ export default function Settings() {
     setHasUnsavedChanges(false);
   };
 
+  // 설정 내보내기
+  const handleExport = () => {
+    const dataStr = JSON.stringify(currentSettings, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 설정 가져오기
+  const handleImport = async (file: File) => {
+    try {
+      const text = await file.text();
+      const importedSettings = JSON.parse(text);
+      
+      if (confirm('가져온 설정으로 현재 설정을 덮어쓰시겠습니까?')) {
+        setSettings(importedSettings);
+        setLocalSettings({});
+        setHasUnsavedChanges(false);
+        alert('설정이 가져와졌습니다. 저장 버튼을 눌러 적용하세요.');
+      }
+    } catch (err) {
+      alert('설정 파일을 읽는데 실패했습니다. 올바른 JSON 파일인지 확인하세요.');
+    }
+  };
+
+  // 프리셋 불러오기
+  const handlePresetLoad = (name: string) => {
+    const presets = localStorage.getItem('settings_presets');
+    if (presets) {
+      try {
+        const presetData = JSON.parse(presets);
+        const preset = presetData[name];
+        if (preset) {
+          if (confirm(`프리셋 "${name}"을 불러오시겠습니까? 현재 변경사항은 취소됩니다.`)) {
+            setSettings(preset);
+            setLocalSettings({});
+            setHasUnsavedChanges(false);
+            alert('프리셋이 불러와졌습니다.');
+          }
+        }
+      } catch (e) {
+        alert('프리셋을 불러오는데 실패했습니다.');
+      }
+    }
+  };
+
+  // 검색 결과 클릭 핸들러
+  const handleSearchResultClick = (tab: string, fieldId?: string) => {
+    setActiveTab(tab as SettingsTab);
+    // 필드로 스크롤하는 기능은 나중에 추가 가능
+    if (fieldId) {
+      setTimeout(() => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
+        }
+      }, 100);
+    }
+  };
+
+  // 기본값 복원
+  const handleResetToDefaults = () => {
+    if (!confirm('모든 설정을 기본값으로 복원하시겠습니까? 저장하지 않은 변경사항은 모두 사라집니다.')) {
+      return;
+    }
+    
+    const defaults = getDefaultSettings();
+    const mergedDefaults: Settings = {
+      ...settings,
+      ...defaults,
+    } as Settings;
+    
+    setSettings(mergedDefaults);
+    setLocalSettings({});
+    setHasUnsavedChanges(false);
+    alert('설정이 기본값으로 복원되었습니다. 저장 버튼을 눌러 적용하세요.');
+  };
+
   if (loading) {
     return (
       <div className="settings">
@@ -143,7 +228,18 @@ export default function Settings() {
         onCancel={handleCancel}
         hasUnsavedChanges={hasUnsavedChanges}
         isSaving={saving}
+        onExport={handleExport}
+        onImport={handleImport}
+        onPresetLoad={handlePresetLoad}
+        onResetDefaults={handleResetToDefaults}
+        settings={currentSettings}
       />
+      <div className="settings-search-wrapper">
+        <SettingsSearch
+          settings={currentSettings}
+          onResultClick={handleSearchResultClick}
+        />
+      </div>
       <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="settings-content">
         {activeTab === 'general' && (
