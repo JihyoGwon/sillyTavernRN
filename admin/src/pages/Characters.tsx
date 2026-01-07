@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { getAllCharacters, deleteCharacter, duplicateCharacter, type Character } from '../services/characters';
+import { getAllCharacters, deleteCharacter, duplicateCharacter, createCharacter, editCharacter, type Character } from '../services/characters';
+import CharacterForm from '../components/CharacterForm';
 import './Characters.css';
 
 export default function Characters() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
 
   const loadCharacters = async () => {
     try {
@@ -51,6 +54,43 @@ export default function Characters() {
     }
   };
 
+  const handleCreate = () => {
+    setEditingCharacter(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (character: Character) => {
+    setEditingCharacter(character);
+    setIsFormOpen(true);
+  };
+
+  const handleSave = async (characterData: Partial<Character>) => {
+    try {
+      if (editingCharacter) {
+        // 수정 - avatar_url 필드 필요
+        await editCharacter({
+          ...characterData,
+          avatar_url: editingCharacter.avatar,
+        });
+        alert('캐릭터가 수정되었습니다.');
+      } else {
+        // 생성
+        await createCharacter(characterData);
+        alert('캐릭터가 생성되었습니다.');
+      }
+      setIsFormOpen(false);
+      setEditingCharacter(null);
+      await loadCharacters();
+    } catch (err) {
+      throw err; // CharacterForm에서 처리
+    }
+  };
+
+  const handleCancel = () => {
+    setIsFormOpen(false);
+    setEditingCharacter(null);
+  };
+
   if (loading) {
     return (
       <div className="characters">
@@ -78,7 +118,7 @@ export default function Characters() {
     <div className="characters">
       <div className="characters-header">
         <h1>캐릭터 관리</h1>
-        <button className="btn-primary" onClick={() => alert('캐릭터 생성 기능은 곧 추가됩니다.')}>
+        <button className="btn-primary" onClick={handleCreate}>
           새 캐릭터 생성
         </button>
       </div>
@@ -109,7 +149,7 @@ export default function Characters() {
                 <div className="character-actions">
                   <button
                     className="btn-secondary"
-                    onClick={() => alert('캐릭터 수정 기능은 곧 추가됩니다.')}
+                    onClick={() => handleEdit(character)}
                   >
                     수정
                   </button>
@@ -131,6 +171,13 @@ export default function Characters() {
           </div>
         )}
       </div>
+
+      <CharacterForm
+        character={editingCharacter}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isOpen={isFormOpen}
+      />
     </div>
   );
 }

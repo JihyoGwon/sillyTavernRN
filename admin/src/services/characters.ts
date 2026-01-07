@@ -36,7 +36,7 @@ export async function createCharacter(characterData: Partial<Character>): Promis
 /**
  * 캐릭터 수정
  */
-export async function editCharacter(characterData: Partial<Character>): Promise<void> {
+export async function editCharacter(characterData: Partial<Character> & { avatar_url?: string }): Promise<void> {
   await apiPost('/api/characters/edit', characterData);
 }
 
