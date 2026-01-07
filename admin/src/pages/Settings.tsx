@@ -7,6 +7,10 @@ import SettingsTabs, { type SettingsTab } from '../components/SettingsTabs';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import GenerationSettings from '../components/settings/GenerationSettings';
 import OpenAISettings from '../components/settings/OpenAISettings';
+import TextGenSettings from '../components/settings/TextGenSettings';
+import KoboldSettings from '../components/settings/KoboldSettings';
+import NovelAISettings from '../components/settings/NovelAISettings';
+import HordeSettings from '../components/settings/HordeSettings';
 import './Settings.css';
 
 export default function Settings() {
@@ -157,24 +161,28 @@ export default function Settings() {
           />
         )}
         {activeTab === 'textgen' && (
-          <div className="settings-placeholder">
-            TextGen 설정 (구현 예정)
-          </div>
+          <TextGenSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'kobold' && (
-          <div className="settings-placeholder">
-            Kobold 설정 (구현 예정)
-          </div>
+          <KoboldSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'novelai' && (
-          <div className="settings-placeholder">
-            NovelAI 설정 (구현 예정)
-          </div>
+          <NovelAISettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'horde' && (
-          <div className="settings-placeholder">
-            Horde 설정 (구현 예정)
-          </div>
+          <HordeSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'power-user' && (
           <div className="settings-placeholder">
