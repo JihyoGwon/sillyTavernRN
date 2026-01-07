@@ -14,6 +14,7 @@ import HordeSettings from '../components/settings/HordeSettings';
 import WorldInfoSettings from '../components/settings/WorldInfoSettings';
 import PowerUserSettings from '../components/settings/PowerUserSettings';
 import ExtensionSettings from '../components/settings/ExtensionSettings';
+import OtherSettings from '../components/settings/OtherSettings';
 import './Settings.css';
 
 export default function Settings() {
@@ -206,9 +207,10 @@ export default function Settings() {
           />
         )}
         {activeTab === 'others' && (
-          <div className="settings-placeholder">
-            기타 설정 (구현 예정)
-          </div>
+          <OtherSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
       </div>
     </div>
