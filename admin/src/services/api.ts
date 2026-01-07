@@ -79,10 +79,22 @@ async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error?.message || `API 요청 실패: ${response.status}`
-      );
+      let errorMessage = `API 요청 실패: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error?.message || errorData.message || errorMessage;
+      } catch {
+        // JSON 파싱 실패 시 텍스트로 시도
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = `${errorMessage}: ${errorText.substring(0, 200)}`;
+          }
+        } catch {
+          // 텍스트도 읽을 수 없으면 기본 메시지 사용
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();

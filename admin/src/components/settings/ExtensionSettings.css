@@ -1,0 +1,128 @@
+.extension-settings {
+  padding: 2rem;
+  max-width: 1000px;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.info-box {
+  padding: 1rem;
+  background: #f0f7ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.info-box p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.info-box p:first-child {
+  margin-top: 0;
+}
+
+.info-box strong {
+  color: #0056b3;
+}
+
+.extension-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: white;
+}
+
+.extension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.extension-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  text-transform: capitalize;
+}
+
+.extension-content {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.extension-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-field {
+  margin-bottom: 1rem;
+}
+
+.settings-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.settings-field input[type="number"] {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.settings-field input[type="number"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+}
+
+.field-description {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.extension-json {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+

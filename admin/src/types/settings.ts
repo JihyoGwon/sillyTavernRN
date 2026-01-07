@@ -204,8 +204,10 @@ export interface PowerUserSettings {
  */
 export interface WorldInfoSettings {
   enabled?: boolean;
-  include_names?: string[];
-  anchor_position?: string;
+  include_names?: boolean; // world_info_include_names: 이름 포함 여부
+  anchor_position?: string; // wi_anchor_position: 앵커 위치
+  depth?: number; // World Info 깊이 설정
+  scan_global?: boolean; // 전역 스캔 여부
   [key: string]: any;
 }
 

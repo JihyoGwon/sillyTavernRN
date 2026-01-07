@@ -11,6 +11,9 @@ import TextGenSettings from '../components/settings/TextGenSettings';
 import KoboldSettings from '../components/settings/KoboldSettings';
 import NovelAISettings from '../components/settings/NovelAISettings';
 import HordeSettings from '../components/settings/HordeSettings';
+import WorldInfoSettings from '../components/settings/WorldInfoSettings';
+import PowerUserSettings from '../components/settings/PowerUserSettings';
+import ExtensionSettings from '../components/settings/ExtensionSettings';
 import './Settings.css';
 
 export default function Settings() {
@@ -185,19 +188,22 @@ export default function Settings() {
           />
         )}
         {activeTab === 'power-user' && (
-          <div className="settings-placeholder">
-            고급 설정 (구현 예정)
-          </div>
+          <PowerUserSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'world-info' && (
-          <div className="settings-placeholder">
-            World Info 설정 (구현 예정)
-          </div>
+          <WorldInfoSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'extensions' && (
-          <div className="settings-placeholder">
-            확장 기능 설정 (구현 예정)
-          </div>
+          <ExtensionSettings
+            settings={currentSettings}
+            onChange={handleSettingsChange}
+          />
         )}
         {activeTab === 'others' && (
           <div className="settings-placeholder">
