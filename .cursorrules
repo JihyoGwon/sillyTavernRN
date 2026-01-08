@@ -24,7 +24,9 @@
 
 ## 네비게이션 (Expo Router)
 - `app/` 디렉토리 내의 파일 기반 라우팅을 따른다.
-- 네비게이션 이동 시 `expo-router`의 `Link` 컴포넌트를 사용한다.
+- 네비게이션 이동 시:
+  - **이벤트 핸들러 내부**에서는 `router.push()` 또는 `router.replace()` 사용
+  - **정적 링크나 단순 네비게이션**에서는 `expo-router`의 `Link` 컴포넌트 사용
 - 관련된 라우트들(예: 탭 화면)은 `_layout.tsx`를 사용하여 그룹화한다.
 
 ## 상태 관리 (Zustand)

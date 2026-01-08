@@ -1,20 +1,22 @@
-import { useEffect, useRef } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useLayoutEffect } from 'react';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { ChatMessage } from '@/components/ChatMessage';
 import { ChatInput } from '@/components/ChatInput';
-import { StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useChatStore } from '@/store/chatStore';
 import { getAllCharacters } from '@/services/characters';
 import { getChat, saveChat } from '@/services/chats';
 import { sendStreamingChatCompletion } from '@/services/chat-completion';
-import type { ChatCompletionMessage, ChatMessage } from '@/services/types';
+import type { ChatCompletionMessage, ChatMessage as ChatMessageType } from '@/services/types';
 
 export default function ChatScreen() {
   const params = useLocalSearchParams();
+  const navigation = useNavigation();
   const characterId = params.id as string;
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flashListRef = useRef<FlashList<ChatMessageType>>(null);
   
   const {
     currentCharacter,
@@ -31,6 +33,15 @@ export default function ChatScreen() {
     setError,
   } = useChatStore();
 
+  // 헤더 제목을 동적으로 설정
+  useLayoutEffect(() => {
+    if (currentCharacter) {
+      navigation.setOptions({
+        title: currentCharacter.name,
+      });
+    }
+  }, [currentCharacter, navigation]);
+
   // 캐릭터 정보 로드
   useEffect(() => {
     const loadCharacter = async () => {
@@ -46,10 +57,22 @@ export default function ChatScreen() {
         
         setCurrentCharacter(character);
         
-        // 채팅 불러오기
+        // 채팅 불러오기 (하이브리드: 로컬 캐시 먼저, 서버에서 최신 확인)
         if (character.chat) {
-          const chatMessages = await getChat(character.name, character.chat);
-          setMessages(chatMessages);
+          try {
+            // getChat 함수가 내부적으로 로컬 캐시를 먼저 확인하고 서버에서 업데이트함
+            const chatMessages = await getChat(character.name, character.chat);
+            // 배열인지 확인하고, 아니면 빈 배열로 설정
+            setMessages(Array.isArray(chatMessages) ? chatMessages : []);
+          } catch (chatErr) {
+            // 채팅 불러오기 실패 시 빈 배열로 시작
+            // (getChat 함수가 이미 로컬 캐시를 시도했을 것)
+            console.warn('채팅 불러오기 실패:', chatErr);
+            setMessages([]);
+          }
+        } else {
+          // 채팅이 없으면 빈 배열로 시작
+          setMessages([]);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
@@ -68,7 +91,7 @@ export default function ChatScreen() {
     if (!currentCharacter) return;
 
     // 사용자 메시지 추가
-    const userMessage: ChatMessage = {
+    const userMessage: ChatMessageType = {
       mes: text,
       is_user: true,
       name: 'User',
@@ -81,8 +104,9 @@ export default function ChatScreen() {
 
     try {
       // 메시지 히스토리를 ChatCompletion 형식으로 변환
+      const currentMessages = Array.isArray(messages) ? messages : [];
       const chatHistory: ChatCompletionMessage[] = [
-        ...messages.map((msg) => ({
+        ...currentMessages.map((msg) => ({
           role: msg.is_user ? 'user' : 'assistant',
           content: msg.mes,
           name: msg.name,
@@ -94,7 +118,7 @@ export default function ChatScreen() {
       ];
 
       // AI 메시지 초기화
-      const aiMessage: ChatMessage = {
+      const aiMessage: ChatMessageType = {
         mes: '',
         is_user: false,
         name: currentCharacter.name,
@@ -120,29 +144,40 @@ export default function ChatScreen() {
         }
       );
 
-      // 채팅 저장
+      // 채팅 저장 (하이브리드: 서버 저장 후 로컬 캐시에도 저장)
       if (currentCharacter.chat) {
+        const currentMessages = Array.isArray(messages) ? messages : [];
+        // saveChat 함수가 내부적으로 서버 저장 후 로컬 캐시에도 저장함
         await saveChat({
           ch_name: currentCharacter.name,
           file_name: currentCharacter.chat,
-          chat: [...messages, userMessage, aiMessage],
+          chat: [...currentMessages, userMessage, aiMessage],
           avatar_url: currentCharacter.avatar,
         });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '메시지 전송 실패');
       // 에러 발생 시 마지막 메시지 제거
-      setMessages(messages);
+      const currentMessages = Array.isArray(messages) ? messages : [];
+      setMessages(currentMessages);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // 스크롤을 맨 아래로
+  // 스크롤을 맨 아래로 (새 메시지가 추가되면)
   useEffect(() => {
-    if (scrollViewRef.current) {
+    if (flashListRef.current && Array.isArray(messages) && messages.length > 0) {
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        try {
+          flashListRef.current?.scrollToIndex({
+            index: messages.length - 1,
+            animated: true,
+          });
+        } catch {
+          // 인덱스가 범위를 벗어나면 맨 끝으로 스크롤
+          flashListRef.current?.scrollToEnd({ animated: true });
+        }
       }, 100);
     }
   }, [messages]);
@@ -172,29 +207,61 @@ export default function ChatScreen() {
     );
   }
 
+  const currentMessages = Array.isArray(messages) ? messages : [];
+  
+  // FlashList용 데이터 (생성 중 표시를 위해 임시 메시지 추가)
+  const listData = isGenerating 
+    ? [...currentMessages, { mes: '', is_user: false, name: 'generating' } as ChatMessageType]
+    : currentMessages;
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText style={styles.headerTitle}>
-          {currentCharacter.name}
-        </ThemedText>
-      </ThemedView>
-
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.messagesContainer}
+      <FlashList<ChatMessageType>
+        ref={flashListRef}
+        data={listData}
+        keyExtractor={(item, index) => {
+          // 생성 중 표시는 특별한 키 사용
+          if (item.name === 'generating') return 'generating';
+          // 메시지 고유 키 생성 (mes + index 조합)
+          return `${item.mes}-${index}-${item.is_user ? 'user' : 'ai'}`;
+        }}
+        renderItem={({ item, index }) => {
+          // 생성 중 표시
+          if (item.name === 'generating') {
+            return (
+              <ThemedView style={styles.generatingContainer}>
+                <ActivityIndicator size="small" />
+                <ThemedText style={styles.generatingText}>생성 중...</ThemedText>
+              </ThemedView>
+            );
+          }
+          return <ChatMessage message={item} />;
+        }}
+        estimatedItemSize={80}
         contentContainerStyle={styles.messagesContent}
-      >
-        {messages.map((message, index) => (
-          <ChatMessage key={index} message={message} />
-        ))}
-        {isGenerating && (
-          <ThemedView style={styles.generatingContainer}>
-            <ActivityIndicator size="small" />
-            <ThemedText style={styles.generatingText}>생성 중...</ThemedText>
+        ListEmptyComponent={
+          <ThemedView style={styles.emptyMessagesContainer}>
+            <ThemedText style={styles.emptyMessagesText}>
+              아직 메시지가 없습니다. 대화를 시작해보세요!
+            </ThemedText>
           </ThemedView>
-        )}
-      </ScrollView>
+        }
+        onContentSizeChange={() => {
+          // 내용 크기 변경 시 맨 아래로 스크롤 (스트리밍 중일 때)
+          if (flashListRef.current && currentMessages.length > 0 && isGenerating) {
+            setTimeout(() => {
+              try {
+                flashListRef.current?.scrollToIndex({
+                  index: currentMessages.length - 1,
+                  animated: false,
+                });
+              } catch {
+                flashListRef.current?.scrollToEnd({ animated: false });
+              }
+            }, 50);
+          }
+        }}
+      />
 
       <ChatInput
         onSend={handleSend}
@@ -213,18 +280,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  messagesContainer: {
-    flex: 1,
   },
   messagesContent: {
     paddingVertical: 8,
@@ -249,6 +304,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     opacity: 0.7,
+  },
+  emptyMessagesContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyMessagesText: {
+    fontSize: 16,
+    opacity: 0.7,
+    textAlign: 'center',
   },
 });
 
